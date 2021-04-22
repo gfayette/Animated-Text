@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+
+    <script id="vertex-shader" type="x-shader/x-vertex">
+    attribute vec4 vPosition;
+    attribute vec4 vColor;
+
+    attribute float vTranslateOffset;
+    attribute float vExpandOffset;
+    attribute float vColorOffset;
+
+    varying vec4 fColor;
+
+    uniform float xScale;
+    uniform float yScale;
+
+    uniform float xTranslate;
+    uniform float yTranslate;
+    uniform float translateSpeed;
+    uniform float translateSpeedOffset;
+    uniform float translateXYOffset;
+
+    uniform float xExpand;
+    uniform float yExpand;
+    uniform float expandSpeed;
+    uniform float expandSpeedOffset;
+    uniform float expandXYOffset;
+
+    uniform float gTranslate;
+    uniform float bTranslate;
+    uniform float colorSpeed;
+    uniform float bColorSpeedOffset;
+
+    uniform float theta;
+
+    void main() {
+
+        // Vertices //
+
+        // Translate
+        float translateAngle = radians( vTranslateOffset + theta ) * translateSpeed;
+        float tx = cos( translateAngle ) * xTranslate * xScale;
+        float ty = cos( translateAngle * ( 1.0 + translateSpeedOffset ) + translateXYOffset ) * yTranslate * yScale;
+
+        // Expand
+        float expandAngle = radians( vExpandOffset + theta ) * expandSpeed;
+        float ex = ( cos( expandAngle ) - 1.0 ) * xExpand;
+        float ey = ( cos( expandAngle * ( 1.0 + expandSpeedOffset ) + expandXYOffset ) - 1.0 ) * yExpand;
+
+        // Set positions
+        // todo: flip order of operations
+        gl_Position.x = ( vPosition.x + tx ) * ( 1.0 + ex );
+        gl_Position.y = ( vPosition.y + ty ) * ( 1.0 + ey );
+        gl_Position.z = vPosition.z;
+        gl_Position.w = vPosition.w;
+
+
+        // Colors //
+
+        float colorAngle = radians( vColorOffset + theta ) * colorSpeed;
+
+        fColor.r = vColor.r;
+
+        float tg = cos( colorAngle ) * gTranslate;
+        fColor.g = vColor.g + tg;
+
+        float tb = cos( colorAngle + bColorSpeedOffset) * bTranslate;
+        fColor.b = vColor.b + tb;
+
+        fColor.a = vColor.a;
+    }
+</script>
+
+    <script id="fragment-shader" type="x-shader/x-fragment">
+    precision mediump float;
+    varying vec4 fColor;
+
+    void main()
+    {
+        gl_FragColor = fColor;
+    }
+</script>
+
+    <script src="../Common/webgl-utils.js"></script>
+    <script src="../Common/initShaders.js"></script>
+    <script src="../Common/MV.js"></script>
+    <script src="letters.js"></script>
+    <script src="project.js"></script>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+        integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
+
+</head>
+
+<body style="background-color:white;">
+    <link rel="stylesheet" href="project.css">
+
+
+    <div style="width: 100%; overflow: hidden;">
+        
+        <div style="display: table-row">
+
+            <div style="width: 1000px; float: left;">
+
+                <canvas id="gl-canvas" width="1000" height="1000">
+                    Your browser doesn't support HTML5!
+                </canvas>
+
+            </div>
+
+            <div style="margin-left: 1000px;">
+
+                <div style="padding-left:20px; padding-top:20px; width:760px">
+                    <input type="text" class="form-control" placeholder="Enter text..." aria-label="Username"
+                        aria-describedby="basic-addon1" id="input-text">
+                </div>
+
+                <br>
+
+                <div class="container-0">
+                    x Translate <br><input type="range" class="form-range, container-1" id="xTranslateRange" min="-1.0"
+                        max="1.0" step="0.001" value="0.0">
+                </div>
+                <div class="container-0">
+                    y Translate <br><input type="range" class="form-range, container-1" id="yTranslateRange" min="-1.0"
+                        max="1.0" step="0.001" value="0.0">
+                </div>
+                <div class="container-0">
+                    Translate Speed <br><input type="range" class="form-range, container-1" id="translateSpeedRange"
+                        min="-1.0" max="5.0" step="0.001" value="1.0">
+                </div>
+                <div class="container-0">
+                    Translate y Speed Multiplier <br><input type="range" class="form-range, container-1"
+                        id="translateSpeedOffsetRange" min="-1.0" max="5.0" step="0.001" value="0.0">
+                </div>
+                <div class="container-0">
+                    Translate y Speed Offset <br><input type="range" class="form-range, container-1"
+                        id="translateXYOffsetRange" min="0.0" max="6.28" step="0.001" value="0.0">
+                </div>
+                <div class="container-0">
+                    Translate vTheta Offset <br><input type="range" class="form-range, container-1"
+                        id="translateThetaOffsetRange" min="0.0" max="10.0" step="0.001" value="0.0">
+                </div>
+
+                <br>
+
+                <div class="container-0">
+                    x Scale <br><input type="range" class="form-range, container-1" id="xExpandRange" min="-1.0"
+                        max="1.0" step="0.001" value="0.0">
+                </div>
+                <div class="container-0">
+                    y Scale <br><input type="range" class="form-range, container-1" id="yExpandRange" min="-1.0"
+                        max="1.0" step="0.001" value="0.0">
+                </div>
+                <div class="container-0">
+                    Scale Speed <br><input type="range" class="form-range, container-1" id="expandSpeedRange" min="-5.0"
+                        max="5.0" step="0.001" value="1.0">
+                </div>
+                <div class="container-0">
+                    Scale y Speed Multiplier <br><input type="range" class="form-range, container-1"
+                        id="expandSpeedOffsetRange" min="-5.0" max="5.0" step="0.001" value="0.0">
+                </div>
+                <div class="container-0">
+                    Scale y Speed Offset <br><input type="range" class="form-range, container-1" id="expandXYOffsetRange"
+                        min="0.0" max="6.28" step="0.001" value="0.0">
+                </div>
+                <div class="container-0">
+                    Scale vTheta Offset <br><input type="range" class="form-range, container-1" id="expandThetaOffsetRange"
+                        min="-1.0" max="1.0" step="0.001" value="0.0">
+                </div>
+
+                <br>
+
+                <div class="container-0">
+                    g Translate <br><input type="range" class="form-range, container-1" id="gTranslateRange" min="-0.5"
+                        max="0.5" step="0.001" value="0.1">
+                </div>
+                <div class="container-0">
+                    b Translate <br><input type="range" class="form-range, container-1" id="bTranslateRange" min="-0.5"
+                        max="0.5" step="0.001" value="0.0">
+                </div>
+                <div class="container-0">
+                    Color Speed <br><input type="range" class="form-range, container-1" id="colorSpeedRange"
+                        min="-1.0" max="5.0" step="0.001" value="1.0">
+                </div>
+                <div class="container-0">
+                    b Color Speed Offset <br><input type="range" class="form-range, container-1"
+                        id="bColorSpeedOffsetRange" min="-3.14" max="3.14" step="0.001" value="0.0">
+                </div>
+                <div class="container-0">
+                    Color vTheta Offset <br><input type="range" class="form-range, container-1" id="colorThetaOffsetRange"
+                        min="0.0" max="2.0" step="0.001" value="0.4">
+                </div>
+
+                <br>
+
+                <div class="container-0">
+                    Theta Speed <br><input type="range" class="form-range, container-1" id="thetaSpeedRange"
+                        min="-2.0" max="4.0" step="0.001" value="1.0">
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+</body>
+
+</html>
