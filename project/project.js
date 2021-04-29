@@ -1,62 +1,79 @@
+// Setup
 var gl;
 var canvas;
 var program;
 
+// Vertices
 var vertices;
-var vertexColors;
 
-var translateOffsets;
-var expandThetaOffset;
-var colorOffsets;
-
+// Text scale
 var xScale;
 var yScale;
 
+// Base colors
+var rBase = 0.4;
+var gBase = 0.4;
+var bBase = 0.4;
+var noise = 0.2
+
+// Translation
 var xTranslate;
 var yTranslate;
 var translateSpeed;
 var translateSpeedOffset;
 var translateXYOffset;
 
+// Scale
 var xExpand;
 var yExpand;
 var xExpandSpeed;
 var yExpandSpeed;
 var expandXYOffset;
 
+// Colors
+var rTranslate;
 var gTranslate;
 var bTranslate;
 var colorSpeed;
+var gColorSpeedOffset;
 var bColorSpeedOffset;
 
+// Translate shader locations
 var xTranslateLoc;
 var yTranslateLoc;
 var translateSpeedLoc;
 var translateSpeedOffsetLoc;
 var translateXYOffsetLoc;
 
+// Scale shader locations
 var xExpandLoc;
 var yExpandLoc;
 var xExpandSpeedLoc;
 var yExpandSpeedLoc;
 var expandXYOffsetLoc;
 
+// Color shader locations
+var rTranslateLoc;
 var gTranslateLoc;
 var bTranslateLoc;
 var colorSpeedLoc;
+var gColorSpeedOffsetLoc;
 var bColorSpeedOffsetLoc;
 
+// Offsets
 var translateThetaOffset;
 var expandThetaOffset;
 var colorThetaOffset;
 
+// Theta
 var theta = 0.0;
 var thetaSpeed;
 var thetaLoc;
 
 var running = false;
 
-const moveArray = (arr, xOffset, yOffset) => {
+// Returns an array of translated x and y coordinates
+const translateArray = (arr, xOffset, yOffset) => {
     var movedArr = [];
     arr.forEach((element) => {
         var movedVec = [];
@@ -67,6 +84,7 @@ const moveArray = (arr, xOffset, yOffset) => {
     return movedArr;
 };
 
+// Returns an array of scaled x and y coordinates
 const scaleArray = (arr, xScale, yScale) => {
     var scaledArr = [];
     arr.forEach((element) => {
@@ -78,13 +96,14 @@ const scaleArray = (arr, xScale, yScale) => {
     return scaledArr;
 };
 
+// Returns an array containing the base colors of each vertex
 const getColors = (arr) => {
     var colorArray = [];
     arr.forEach((element) => {
         color = new vec4(
-            0.0,
-            0.4 + Math.random() * 0.2,
-            0.4 + Math.random() * 0.2,
+            rBase + Math.random() * noise,
+            gBase + Math.random() * noise,
+            bBase + Math.random() * noise,
             1.0
         )
         colorArray.push(color);
@@ -92,6 +111,7 @@ const getColors = (arr) => {
     return colorArray;
 };
 
+// Returns an array of vertex theta offsets
 const getThetas = (arr, angle) => {
     var thetaArray = [];
     var offset = 0.0
@@ -102,12 +122,14 @@ const getThetas = (arr, angle) => {
     return thetaArray;
 };
 
-const getArray = (input) => {
-    var arr = [];
-    var lineOffset = 0;
-    var xOffset = 0;
-    var yOffset = 1;
+// Given an input string, returns an array of vertices representing the string
+const getTextArray = (input) => {
+    var arr = []; // letter array
+    var lineOffset = 0; // x offset of current line
+    var xOffset = 0; // max x offset
+    var yOffset = 1; // max y offset
 
+    // Iterate through the string and append the vertices of each letter to the array
     for (var i = 0; i < input.length; ++i) {
         if (lineOffset == 0) { yOffset -= 7; }
 
@@ -147,7 +169,7 @@ const getArray = (input) => {
                 console.log("default");
         }
 
-        letter = moveArray(letter, lineOffset, yOffset);
+        letter = translateArray(letter, lineOffset, yOffset);
         arr.push(...letter);
 
         lineOffset += 5;
@@ -157,10 +179,12 @@ const getArray = (input) => {
         }
     }
 
+    // Assign max x offset
     if (xOffset < lineOffset) { xOffset = lineOffset; }
     xOffset -= 1;
 
-    arr = moveArray(arr, -xOffset / 2, -yOffset / 2)
+    // Center the array
+    arr = translateArray(arr, -xOffset / 2, -yOffset / 2)
     if (xOffset > 19) {
         xScale = 1.9 / xOffset;
         if (yOffset < -xOffset) {
@@ -172,11 +196,14 @@ const getArray = (input) => {
         xScale = 0.1;
         yScale = 0.1;
     }
+
+    // Scale the array
     arr = scaleArray(arr, xScale, yScale);
+
     return arr;
 }
 
-
+// Event handlers for translate
 function handleXTranslate(e) {
     xTranslate = parseFloat(e.target.value);
     gl.uniform1f(xTranslateLoc, xTranslate);
@@ -202,7 +229,7 @@ function handleTranslateXYOffset(e) {
     gl.uniform1f(translateXYOffsetLoc, translateXYOffset);
 }
 
-
+// Event handlers for scale
 function handleXExpand(e) {
     xExpand = parseFloat(e.target.value);
     gl.uniform1f(xExpandLoc, xExpand);
@@ -228,6 +255,11 @@ function handleExpandXYOffset(e) {
     gl.uniform1f(expandXYOffsetLoc, expandXYOffset);
 }
 
+// Event handlers for color
+function handleRTranslate(e) {
+    rTranslate = parseFloat(e.target.value);
+    gl.uniform1f(rTranslateLoc, rTranslate);
+}
 
 function handleGTranslate(e) {
     gTranslate = parseFloat(e.target.value);
@@ -244,12 +276,17 @@ function handleColorSpeed(e) {
     gl.uniform1f(colorSpeedLoc, colorSpeed);
 }
 
+function handleGColorSpeedOffset(e) {
+    gColorSpeedOffset = parseFloat(e.target.value);
+    gl.uniform1f(gColorSpeedOffsetLoc, gColorSpeedOffset);
+}
+
 function handleBColorSpeedOffset(e) {
     bColorSpeedOffset = parseFloat(e.target.value);
     gl.uniform1f(bColorSpeedOffsetLoc, bColorSpeedOffset);
 }
 
-
+// Event handlers for vertex offsets
 function handleTranslateThetaOffset(e) {
     translateThetaOffset = parseFloat(e.target.value);
     handleInput();
@@ -265,27 +302,26 @@ function handleColorThetaOffset(e) {
     handleInput();
 }
 
-
+// Event handler for speed
 function handleThetaSpeed(e) {
     thetaSpeed = parseFloat(e.target.value);
 }
 
-
+// Event handler for text input
 function handleText(e) {
-    vertices = getArray(e.target.value);
+    vertices = getTextArray(e.target.value);
+    gl.uniform1f(xScaleLoc, xScale);
+    gl.uniform1f(yScaleLoc, yScale);
     handleInput();
 }
 
-
+// Assign vertex attributes and send them to the shader
 function handleInput() {
-    vertexColors = getColors(vertices);
-
-    translateOffsets = getThetas(vertices, translateThetaOffset);
-    expandOffsets = getThetas(vertices, expandThetaOffset);
-    colorOffsets = getThetas(vertices, colorThetaOffset);
-
-    gl.uniform1f(xScaleLoc, xScale);
-    gl.uniform1f(yScaleLoc, yScale);
+    // Get attributes
+    var vertexColors = getColors(vertices);
+    var translateOffsets = getThetas(vertices, translateThetaOffset);
+    var expandOffsets = getThetas(vertices, expandThetaOffset);
+    var colorOffsets = getThetas(vertices, colorThetaOffset);
 
     // Colors
     var cBuffer = gl.createBuffer();
@@ -334,6 +370,7 @@ function handleInput() {
     }
 }
 
+// Setup the canvas and send initial values to the shader
 function setup() {
     canvas = document.getElementById('gl-canvas');
     gl = WebGLUtils.setupWebGL(canvas);
@@ -346,6 +383,7 @@ function setup() {
     program = initShaders(gl, 'vertex-shader', 'fragment-shader');
     gl.useProgram(program);
 
+    // Get shader locations
     xScaleLoc = gl.getUniformLocation(program, "xScale");
     yScaleLoc = gl.getUniformLocation(program, "yScale");
 
@@ -361,13 +399,16 @@ function setup() {
     expandSpeedOffsetLoc = gl.getUniformLocation(program, "expandSpeedOffset");
     expandXYOffsetLoc = gl.getUniformLocation(program, "expandXYOffset");
 
+    rTranslateLoc = gl.getUniformLocation(program, "rTranslate");
     gTranslateLoc = gl.getUniformLocation(program, "gTranslate");
     bTranslateLoc = gl.getUniformLocation(program, "bTranslate");
     colorSpeedLoc = gl.getUniformLocation(program, "colorSpeed");
+    gColorSpeedOffsetLoc = gl.getUniformLocation(program, "gColorSpeedOffset");
     bColorSpeedOffsetLoc = gl.getUniformLocation(program, "bColorSpeedOffset");
 
     thetaLoc = gl.getUniformLocation(program, "theta");
 
+    // Send initial values to shader
     gl.uniform1f(xTranslateLoc, xTranslate);
     gl.uniform1f(yTranslateLoc, yTranslate);
     gl.uniform1f(translateSpeedLoc, translateSpeed);
@@ -380,13 +421,16 @@ function setup() {
     gl.uniform1f(expandSpeedOffsetLoc, expandSpeedOffset);
     gl.uniform1f(expandXYOffsetLoc, expandXYOffset);
 
+    gl.uniform1f(rTranslateLoc, rTranslate);
     gl.uniform1f(gTranslateLoc, gTranslate);
     gl.uniform1f(bTranslateLoc, bTranslate);
     gl.uniform1f(colorSpeedLoc, colorSpeed);
+    gl.uniform1f(gColorSpeedOffsetLoc, gColorSpeedOffset);
     gl.uniform1f(bColorSpeedOffsetLoc, bColorSpeedOffset);
 }
 
 window.onload = function init() {
+    // Get elements and assign event handlers
     const text = document.getElementById('input-text');
     text.oninput = handleText;
 
@@ -416,12 +460,16 @@ window.onload = function init() {
     const expandThetaOffsetRange = document.getElementById('expandThetaOffsetRange');
     expandThetaOffsetRange.oninput = handleExpandThetaOffset;
 
+    const rTranslateRange = document.getElementById('rTranslateRange');
+    rTranslateRange.oninput = handleRTranslate;
     const gTranslateRange = document.getElementById('gTranslateRange');
     gTranslateRange.oninput = handleGTranslate;
     const bTranslateRange = document.getElementById('bTranslateRange');
     bTranslateRange.oninput = handleBTranslate;
     const colorSpeedRange = document.getElementById('colorSpeedRange');
     colorSpeedRange.oninput = handleColorSpeed;
+    const gColorSpeedOffsetRange = document.getElementById('gColorSpeedOffsetRange');
+    gColorSpeedOffsetRange.oninput = handleGColorSpeedOffset;
     const bColorSpeedOffsetRange = document.getElementById('bColorSpeedOffsetRange');
     bColorSpeedOffsetRange.oninput = handleBColorSpeedOffset;
     const colorThetaOffsetRange = document.getElementById('colorThetaOffsetRange');
@@ -430,6 +478,7 @@ window.onload = function init() {
     const thetaSpeedRange = document.getElementById('thetaSpeedRange');
     thetaSpeedRange.oninput = handleThetaSpeed;
 
+    // Assign initial values
     xTranslate = parseFloat(xTranslateRange.value);
     yTranslate = parseFloat(yTranslateRange.value);
     translateSpeed = parseFloat(translateSpeedRange.value);
@@ -444,9 +493,11 @@ window.onload = function init() {
     expandXYOffset = parseFloat(expandOffsetXYRange.value);
     expandThetaOffset = parseFloat(expandThetaOffsetRange.value);
 
+    rTranslate = parseFloat(rTranslateRange.value);
     gTranslate = parseFloat(gTranslateRange.value);
     bTranslate = parseFloat(bTranslateRange.value);
     colorSpeed = parseFloat(colorSpeedRange.value);
+    gColorSpeedOffset = parseFloat(gColorSpeedOffsetRange.value);
     bColorSpeedOffset = parseFloat(bColorSpeedOffsetRange.value);
     colorThetaOffset = parseFloat(colorThetaOffsetRange.value);
 
@@ -456,9 +507,11 @@ window.onload = function init() {
 };
 
 function render() {
+    // Update theta
     theta += thetaSpeed;
     gl.uniform1f(thetaLoc, theta);
 
+    // Draw new frame
     gl.clear(gl.COLOR_BUFFER_BIT);
     gl.drawArrays(gl.TRIANGLES, 0, vertices.length);
     requestAnimFrame(render);

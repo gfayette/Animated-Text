@@ -5,34 +5,41 @@
     <meta charset="utf-8">
 
     <script id="vertex-shader" type="x-shader/x-vertex">
+    // Vertex attributes
     attribute vec4 vPosition;
     attribute vec4 vColor;
-
     attribute float vTranslateOffset;
     attribute float vExpandOffset;
     attribute float vColorOffset;
 
+    // Fragment color
     varying vec4 fColor;
 
+    // Text scale
     uniform float xScale;
     uniform float yScale;
 
+    //Translation
     uniform float xTranslate;
     uniform float yTranslate;
     uniform float translateSpeed;
     uniform float translateSpeedOffset;
     uniform float translateXYOffset;
 
+    // Scale
     uniform float xExpand;
     uniform float yExpand;
     uniform float expandSpeed;
     uniform float expandSpeedOffset;
     uniform float expandXYOffset;
 
+    // Color
+    uniform float rTranslate;
     uniform float gTranslate;
     uniform float bTranslate;
-    uniform float colorSpeed;
+    uniform float gColorSpeedOffset;
     uniform float bColorSpeedOffset;
+    uniform float colorSpeed;
 
     uniform float theta;
 
@@ -51,7 +58,6 @@
         float ey = ( cos( expandAngle * ( 1.0 + expandSpeedOffset ) + expandXYOffset ) - 1.0 ) * yExpand;
 
         // Set positions
-        // todo: flip order of operations
         gl_Position.x = ( vPosition.x + tx ) * ( 1.0 + ex );
         gl_Position.y = ( vPosition.y + ty ) * ( 1.0 + ey );
         gl_Position.z = vPosition.z;
@@ -62,14 +68,19 @@
 
         float colorAngle = radians( vColorOffset + theta ) * colorSpeed;
 
-        fColor.r = vColor.r;
+        // Red
+        float tr = ( cos( colorAngle ) + 1.0 ) / 2.0 * rTranslate;
+        fColor.r = vColor.r + tr;
 
-        float tg = cos( colorAngle ) * gTranslate;
+        // Green
+        float tg = ( cos( colorAngle + gColorSpeedOffset ) + 1.0 ) / 2.0 * gTranslate;
         fColor.g = vColor.g + tg;
 
-        float tb = cos( colorAngle + bColorSpeedOffset) * bTranslate;
+        // Blue
+        float tb = ( cos( colorAngle + bColorSpeedOffset ) + 1.0 ) / 2.0 * bTranslate;
         fColor.b = vColor.b + tb;
 
+        // Alpha
         fColor.a = vColor.a;
     }
 </script>
@@ -136,7 +147,7 @@
                         id="translateSpeedOffsetRange" min="-1.0" max="5.0" step="0.001" value="0.0">
                 </div>
                 <div class="container-0">
-                    Translate y Speed Offset <br><input type="range" class="form-range, container-1"
+                    Translate y Offset <br><input type="range" class="form-range, container-1"
                         id="translateXYOffsetRange" min="0.0" max="6.28" step="0.001" value="0.0">
                 </div>
                 <div class="container-0">
@@ -163,7 +174,7 @@
                         id="expandSpeedOffsetRange" min="-5.0" max="5.0" step="0.001" value="0.0">
                 </div>
                 <div class="container-0">
-                    Scale y Speed Offset <br><input type="range" class="form-range, container-1" id="expandXYOffsetRange"
+                    Scale y Offset <br><input type="range" class="form-range, container-1" id="expandXYOffsetRange"
                         min="0.0" max="6.28" step="0.001" value="0.0">
                 </div>
                 <div class="container-0">
@@ -174,8 +185,12 @@
                 <br>
 
                 <div class="container-0">
+                    r Translate <br><input type="range" class="form-range, container-1" id="rTranslateRange" min="-0.5"
+                        max="0.5" step="0.001" value="0.0">
+                </div>
+                <div class="container-0">
                     g Translate <br><input type="range" class="form-range, container-1" id="gTranslateRange" min="-0.5"
-                        max="0.5" step="0.001" value="0.1">
+                        max="0.5" step="0.001" value="0.0">
                 </div>
                 <div class="container-0">
                     b Translate <br><input type="range" class="form-range, container-1" id="bTranslateRange" min="-0.5"
@@ -186,7 +201,11 @@
                         min="-1.0" max="5.0" step="0.001" value="1.0">
                 </div>
                 <div class="container-0">
-                    b Color Speed Offset <br><input type="range" class="form-range, container-1"
+                    g Color Offset <br><input type="range" class="form-range, container-1"
+                        id="gColorSpeedOffsetRange" min="-3.14" max="3.14" step="0.001" value="0.0">
+                </div>
+                <div class="container-0">
+                    b Color Offset <br><input type="range" class="form-range, container-1"
                         id="bColorSpeedOffsetRange" min="-3.14" max="3.14" step="0.001" value="0.0">
                 </div>
                 <div class="container-0">
